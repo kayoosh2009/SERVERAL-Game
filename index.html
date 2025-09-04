@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Minecraft Serveral - Карточки</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #1d1b1c;
+      color: #ffffff;
+      text-align: center;
+      position: relative;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* --- Логотип на фоне --- */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      width: 500px;
+      height: 500px;
+      background: url("logo.png") no-repeat center center;
+      background-size: contain;
+      opacity: 0.05;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    header {
+      position: relative;
+      padding: 15px;
+      background: #1d1b1c;
+      border-bottom: 2px solid #ffb26c;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+      z-index: 2;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 22px;
+      letter-spacing: 1px;
+      color: #ffb26c;
+    }
+
+    /* --- Меню-гамбургер --- */
+    .menu-btn {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      width: 30px;
+      height: 22px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .menu-btn div {
+      height: 4px;
+      background: #ffb26c;
+      border-radius: 2px;
+      transition: 0.3s;
+    }
+    .menu {
+      position: absolute;
+      top: 60px;
+      right: 20px;
+      background: #1d1b1c;
+      border: 2px solid #ffb26c;
+      border-radius: 10px;
+      display: none;
+      flex-direction: column;
+      z-index: 100;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+    }
+    .menu button {
+      padding: 12px 20px;
+      background: none;
+      border: none;
+      color: #ffffff;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.2s;
+    }
+    .menu button:hover {
+      background: rgba(255,178,108,0.2);
+    }
+    .menu.show { display: flex; }
+
+    /* --- Страницы --- */
+    .page {
+      display: none;
+      padding: 30px 20px;
+      z-index: 2;
+      position: relative;
+      animation: fadeIn 0.3s ease;
+    }
+    .page.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* --- Карточки --- */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, 120px);
+      gap: 20px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .card {
+      width: 100px;
+      height: 140px;
+      background: #111;
+      border: 2px solid #ffb26c;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .card img {
+      max-width: 100%;
+      max-height: 100%;
+    }
+    .card:hover {
+      transform: scale(1.08);
+      box-shadow: 0 6px 14px rgba(255,178,108,0.4);
+    }
+    .card.locked {
+      filter: brightness(0.2);
+    }
+
+    /* --- Кнопки --- */
+    button {
+      background: #ffb26c;
+      border: none;
+      color: #1d1b1c;
+      padding: 12px 20px;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background 0.2s, transform 0.2s;
+    }
+    button:hover {
+      background: #e89c5b;
+      transform: translateY(-2px);
+    }
+
+    /* --- Статистика --- */
+    #stats {
+      margin-top: 20px;
+      font-size: 16px;
+      color: #ffb26c;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🎴 Minecraft Serveral Cards</h1>
+    <div class="menu-btn" onclick="toggleMenu()">
+      <div></div><div></div><div></div>
+    </div>
+    <div class="menu" id="menu">
+      <button onclick="navigate('all')">Все карточки</button>
+      <button onclick="navigate('daily')">Ежедневная</button>
+      <button onclick="navigate('collection')">Коллекция</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Все карточки -->
+    <section id="all" class="page">
+      <h2>Все карточки</h2>
+      <div id="all-cards" class="card-grid"></div>
+    </section>
+
+    <!-- Ежедневная -->
+    <section id="daily" class="page">
+      <h2>Ежедневный пакет</h2>
+      <button id="open-pack">Открыть пакет (5 карт)</button>
+      <div id="pack-result" class="card-grid"></div>
+    </section>
+
+    <!-- Коллекция -->
+    <section id="collection" class="page">
+      <h2>Твоя коллекция</h2>
+      <div id="collection-cards" class="card-grid"></div>
+      <div id="stats"></div>
+    </section>
+  </main>
+
+  <script>
+    let cards = {}; // загрузим из cards.json
+    const rarities = [
+      { type: "usual", chance: 50 },
+      { type: "rare", chance: 30 },
+      { type: "mythical", chance: 15 },
+      { type: "legendary", chance: 10 },
+      { type: "secret", chance: 5 }
+    ];
+
+    function loadData() {
+      return JSON.parse(localStorage.getItem("cardData")) || {
+        owned: [],
+        lastDaily: null
+      };
+    }
+    function saveData(d) {
+      localStorage.setItem("cardData", JSON.stringify(d));
+    }
+    let data = loadData();
+
+    // Меню
+    function toggleMenu() {
+      document.getElementById("menu").classList.toggle("show");
+    }
+    function navigate(pageId) {
+      showPage(pageId);
+      toggleMenu();
+    }
+    function showPage(pageId) {
+      document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+      document.getElementById(pageId).classList.add("active");
+      if (pageId === "all") renderAllCards();
+      if (pageId === "collection") renderCollection();
+    }
+
+    // Отрисовка всех карт
+    function renderAllCards() {
+      const container = document.getElementById("all-cards");
+      container.innerHTML = "";
+      for (let rarity in cards) {
+        cards[rarity].forEach(path => {
+          const div = document.createElement("div");
+          div.className = "card";
+          const img = document.createElement("img");
+          img.src = path;
+          div.appendChild(img);
+          if (!data.owned.includes(path)) div.classList.add("locked");
+          container.appendChild(div);
+        });
+      }
+    }
+
+    // Отрисовка коллекции
+    function renderCollection() {
+      const container = document.getElementById("collection-cards");
+      const statsDiv = document.getElementById("stats");
+      container.innerHTML = "";
+      let total = 0;
+      let owned = data.owned.length;
+
+      for (let rarity in cards) {
+        total += cards[rarity].length;
+        cards[rarity].forEach(path => {
+          if (data.owned.includes(path)) {
+            const div = document.createElement("div");
+            div.className = "card";
+            const img = document.createElement("img");
+            img.src = path;
+            div.appendChild(img);
+            container.appendChild(div);
+          }
+        });
+      }
+      statsDiv.innerHTML = `Выбито ${owned} из ${total} карт (${Math.round((owned/total)*100)}%)`;
+    }
+
+    // Выбор случайной редкости
+    function getRandomRarity() {
+      let rand = Math.random() * 100, sum = 0;
+      for (let r of rarities) {
+        sum += r.chance;
+        if (rand <= sum) return r.type;
+      }
+      return "usual";
+    }
+
+    // Выбор случайной карты
+    function getRandomCard(rarity) {
+      const available = cards[rarity].filter(c => !data.owned.includes(c));
+      if (available.length === 0) return null;
+      return available[Math.floor(Math.random() * available.length)];
+    }
+
+    // Открытие пакета
+    function openPack() {
+      const today = new Date().toISOString().split("T")[0];
+      if (data.lastDaily === today) {
+        alert("Ты уже открывал пакет сегодня!");
+        return;
+      }
+      const results = [];
+      for (let i = 0; i < 5; i++) {
+        let card = null, attempts = 0;
+        while (!card && attempts < 10) {
+          const rarity = getRandomRarity();
+          card = getRandomCard(rarity);
+          attempts++;
+        }
+        if (card) {
+          results.push(card);
+          data.owned.push(card);
+        }
+      }
+      data.lastDaily = today;
+      saveData(data);
+      renderPack(results);
+    }
+
+    // Отображение выпавших карт
+    function renderPack(list) {
+      const container = document.getElementById("pack-result");
+      container.innerHTML = "";
+      list.forEach(path => {
+        const div = document.createElement("div");
+        div.className = "card";
+        const img = document.createElement("img");
+        img.src = path;
+        div.appendChild(img);
+        container.appendChild(div);
+      });
+    }
+
+    // Запуск
+    document.getElementById("open-pack").addEventListener("click", openPack);
+    fetch("cards.json").then(r => r.json()).then(json => {
+      cards = json;
+      showPage("all");
+    });
+  </script>
+</body>
+</html>

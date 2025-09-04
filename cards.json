@@ -1,0 +1,20 @@
+{
+  "usual": [
+    "cards/usual/1.png",
+    "cards/usual/2.png",
+    "cards/usual/3.png"
+  ],
+  "rare": [
+    "cards/rare/1.png",
+    "cards/rare/2.png"
+  ],
+  "mythical": [
+    "cards/mythical/1.png"
+  ],
+  "legendary": [
+    "cards/legendary/1.png"
+  ],
+  "secret": [
+    "cards/secret/1.png"
+  ]
+}
